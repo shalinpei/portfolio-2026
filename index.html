@@ -40,10 +40,10 @@
 <main>
   <p><span class="name">Shalin Pei</span> is a Brooklyn-based design executive who led design at Coinbase, Facebook, and Google. She is currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer>
+    <span id="email-link"></span>
     <a href="https://www.linkedin.com/in/shalinpei" target="_blank" rel="noopener">LinkedIn</a>
     <a href="https://medium.com/@shalinpei" target="_blank" rel="noopener">Medium</a>
     <a href="https://instagram.com/shalinpei" target="_blank" rel="noopener">Instagram</a>
-    <span id="email-link"></span>
   </footer>
 </main>
 <script>
@@ -58,7 +58,7 @@
   if (!slot) return;
   var a = document.createElement("a");
   a.setAttribute("href", "mai" + "lto" + ":" + address);
-  a.textContent = address;
+  a.textContent = "Email";
   slot.appendChild(a);
 })();
 </script>
