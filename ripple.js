@@ -98,7 +98,7 @@
   var NET = new URLSearchParams(location.search).has('net');
 
   var gridMask = null;
-  var GRID_SPACING = 48; // net cell size, px
+  var GRID_SPACING = 24; // net cell size, px
   function buildGridMask() {
     var dpr = Math.min(2, window.devicePixelRatio || 1);
     gridMask = document.createElement('canvas');
@@ -108,9 +108,9 @@
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, window.innerWidth, window.innerHeight);
     g.strokeStyle = 'rgba(255,255,255,0.95)';
-    g.lineWidth = 2.5;
+    g.lineWidth = 1;
     g.shadowColor = 'rgba(255,255,255,0.95)';
-    g.shadowBlur = 8;
+    g.shadowBlur = 6;
     g.beginPath();
     for (var x = GRID_SPACING / 2; x < window.innerWidth; x += GRID_SPACING) {
       g.moveTo(x, 0); g.lineTo(x, window.innerHeight);
@@ -121,10 +121,10 @@
     g.stroke();
     // slightly brighter knots where the lines cross
     g.fillStyle = 'rgba(255,255,255,1)';
-    g.shadowBlur = 4;
+    g.shadowBlur = 2;
     for (var dx = GRID_SPACING / 2; dx < window.innerWidth; dx += GRID_SPACING) {
       for (var dy = GRID_SPACING / 2; dy < window.innerHeight; dy += GRID_SPACING) {
-        g.beginPath(); g.arc(dx, dy, 3, 0, 6.2832); g.fill();
+        g.beginPath(); g.arc(dx, dy, 1.5, 0, 6.2832); g.fill();
       }
     }
   }
@@ -264,8 +264,8 @@
           var ramp = t < 0.5
             ? lerpC(PASTEL_PINK, PASTEL_PURPLE, t * 2)
             : lerpC(PASTEL_PURPLE, PASTEL_BLUE, (t - 0.5) * 2);
-          var k = ah * (NET ? 0.035 : 0.02);
-          if (k > (NET ? 0.95 : 0.8)) k = (NET ? 0.95 : 0.8);
+          var k = ah * (NET ? 0.06 : 0.02);
+          if (k > (NET ? 1 : 0.8)) k = (NET ? 1 : 0.8);
           // Fade the color out beyond the gradient's range so far-travelled
           // waves settle back to white instead of tinting the whole pond.
           var fade = 1 - (dMin - 30) / 60;
