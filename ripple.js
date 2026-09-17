@@ -10,8 +10,9 @@
  *
  * Delete this file + the loader snippet in index.html to revert completely.
  *
- * Variant: ?net=1 paints the same gradient on the invisible net instead of
- * flat color — identical water physics, new texture.
+ * Variant: ?net=1 simulates a real elastic net — touch pushes the mesh
+ * down, release lets tension snap it back with a bounce. The pastel
+ * gradient is painted on the stretching mesh.
  *
  * All aesthetic knobs are in CONFIG below.
  */
@@ -37,96 +38,145 @@
   var PASTEL_PURPLE = [220, 200, 238];
   var PASTEL_BLUE = [200, 222, 246];
 
-  // ---------- singular ripple model (net variant) ----------
-  // The heightfield makes wave trains; here each touch emits ONE clean ring:
-  // a gaussian crest with a slight trailing trough, amplitude spreading as
-  // 1/sqrt(r) like real ripples, plus a gentle angular wobble so it feels
-  // like water instead of UI.
-  var RIPPLE_SPEED = 420; // px/s
-  var RIPPLE_WIDTH = 26;  // ring thickness, px (gaussian sigma)
-  var RIPPLE_TAU = 1.5;   // amplitude decay time, s
-  var RIPPLE_LIFE = 2.8;  // prune ripples older than this, s
-  var RIPPLE_H0 = 30;     // crest height in wave units at birth
+  // ---------- real-net membrane model (?net=1) ----------
+  // The net is an elastic membrane pinned at its frame. A touch pushes it
+  // down; on release, tension snaps it back with a bounce. Vertices also
+  // slide in 2D along the depth gradient, so the mesh visibly stretches
+  // like fabric instead of just changing brightness.
+  var NET_SPACING = 24;   // net cell size, px
+  var NET_TENSION = 0.28; // wave-speed squared (must stay <= 0.5 for stability)
+  var NET_DAMP = 0.99;    // velocity retained per frame (higher = bouncier)
+  var PRESS_R = 110;      // finger radius, px
+  var PRESS_DEPTH = 26;   // full-press dent depth, in depth units
+  var PRESS_K = 0.3;      // how hard the finger forces the dent
+  var NET_STRETCH = 30;   // px the mesh slides per unit of depth gradient
+  var BRUSH_KICK = 1.6;   // velocity kick from a hover brush
 
-  var ripples = []; // {x, y, t0, s} — px, seconds, strength (tap = 1)
-  var hgt = null;   // analytic heights for the net variant
+  var nu = null, nv = null; // depth + velocity fields (COLS x ROWS in NET mode)
+  var netSX = NET_SPACING, netSY = NET_SPACING; // actual vertex spacing, px
+  var netPts = [];        // recent touch points {x, y, t} in px — colors the gradient
+  var pressing = false, pressX = 0, pressY = 0;
+  var autoPress = { x: 0, y: 0, until: 0 }; // idle poke
 
-  function computeHeights(nowMs) {
-    var now = nowMs / 1000;
-    while (ripples.length && now - ripples[0].t0 > RIPPLE_LIFE) ripples.shift();
-    hgt.fill(0);
-    if (!ripples.length) return;
-    var cell = CONFIG.px, W = RIPPLE_WIDTH;
-    for (var n = 0; n < ripples.length; n++) {
-      var rp = ripples[n];
-      var age = now - rp.t0;
-      if (age <= 0) continue;
-      var R = RIPPLE_SPEED * age;
-      var decay = Math.exp(-age / RIPPLE_TAU);
-      var spread = 1 / Math.sqrt(Math.max(R, 40) / 40);
-      var base = RIPPLE_H0 * rp.s * decay * spread;
-      var reach = R + W * 4;
-      var x0 = Math.max(0, Math.floor((rp.x - reach) / cell));
-      var x1 = Math.min(COLS - 1, Math.ceil((rp.x + reach) / cell));
-      var y0 = Math.max(0, Math.floor((rp.y - reach) / cell));
-      var y1 = Math.min(ROWS - 1, Math.ceil((rp.y + reach) / cell));
-      for (var cy = y0; cy <= y1; cy++) {
-        for (var cx = x0; cx <= x1; cx++) {
-          var dx = cx * cell - rp.x, dy = cy * cell - rp.y;
-          var d = Math.sqrt(dx * dx + dy * dy);
-          var th = Math.atan2(dy, dx);
-          var wob = 1 + 0.10 * Math.sin(3 * th + 2.0 * age)
-                      + 0.06 * Math.sin(5 * th - 1.3 * age);
-          var Rw = R * (1 + 0.04 * Math.sin(2 * th + 1.1 * age));
-          var dd = (d - Rw) / W;
-          var h = base * wob * Math.exp(-dd * dd);
-          // slight trailing trough just inside the crest
-          var dt = (d - (Rw - W * 1.5)) / W;
-          h -= base * 0.35 * Math.exp(-dt * dt);
-          // impact flash right at the touch while the ring is young
-          if (age < 0.3) {
-            var fr = d / (W * 2);
-            h += base * 1.4 * (1 - age / 0.3) * Math.exp(-fr * fr);
-          }
-          hgt[cy * COLS + cx] += h;
+  function stepNet(now) {
+    // Finger press: force nearby vertices toward the target dent.
+    var hasPress = pressing || autoPress.until > now;
+    if (hasPress) {
+      var fx = pressing ? pressX : autoPress.x;
+      var fy = pressing ? pressY : autoPress.y;
+      var depth = pressing ? PRESS_DEPTH : PRESS_DEPTH * 0.45;
+      var R = PRESS_R;
+      var x0 = Math.max(1, Math.floor((fx - R) / netSX));
+      var x1 = Math.min(COLS - 2, Math.ceil((fx + R) / netSX));
+      var y0 = Math.max(1, Math.floor((fy - R) / netSY));
+      var y1 = Math.min(ROWS - 2, Math.ceil((fy + R) / netSY));
+      for (var jy = y0; jy <= y1; jy++) {
+        for (var ix = x0; ix <= x1; ix++) {
+          var ddx = ix * netSX - fx, ddy = jy * netSY - fy;
+          var dd = Math.sqrt(ddx * ddx + ddy * ddy);
+          if (dd > R) continue;
+          var fall = 0.5 * (1 + Math.cos(Math.PI * dd / R)); // smooth dent
+          var i = jy * COLS + ix;
+          nv[i] += (-depth * fall - nu[i]) * PRESS_K;
         }
+      }
+    }
+    // Tension propagates, damping settles. Edges stay pinned (net on a frame).
+    var ten = NET_TENSION, damp = NET_DAMP;
+    for (var y = 1; y < ROWS - 1; y++) {
+      var row = y * COLS;
+      for (var x = 1; x < COLS - 1; x++) {
+        var i = row + x;
+        var lap = (nu[i - 1] + nu[i + 1] + nu[i - COLS] + nu[i + COLS]) * 0.25 - nu[i];
+        nv[i] = (nv[i] + lap * ten) * damp;
+      }
+    }
+    for (var yy = 1; yy < ROWS - 1; yy++) {
+      var rr = yy * COLS;
+      for (var xx = 1; xx < COLS - 1; xx++) nu[rr + xx] += nv[rr + xx];
+    }
+  }
+
+  // Hover brush: a light touch that ripples the net without denting it.
+  function brush(bx, by) {
+    var R = 42;
+    var x0 = Math.max(1, Math.floor((bx - R) / netSX));
+    var x1 = Math.min(COLS - 2, Math.ceil((bx + R) / netSX));
+    var y0 = Math.max(1, Math.floor((by - R) / netSY));
+    var y1 = Math.min(ROWS - 2, Math.ceil((by + R) / netSY));
+    for (var jy = y0; jy <= y1; jy++) {
+      for (var ix = x0; ix <= x1; ix++) {
+        var dx = ix * netSX - bx, dy = jy * netSY - by;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        if (d > R) continue;
+        nv[jy * COLS + ix] -= BRUSH_KICK * (1 - d / R);
       }
     }
   }
 
-  // Variant flag: ?net=1 paints the gradient on the invisible net.
+  // Variant flag: ?net=1 simulates a real elastic net.
   var NET = new URLSearchParams(location.search).has('net');
 
-  var gridMask = null;
-  var GRID_SPACING = 24; // net cell size, px
-  function buildGridMask() {
-    var dpr = Math.min(2, window.devicePixelRatio || 1);
+  var gridMask = null, maskCtx = null, maskDpr = 1;
+  var dpx = null, dpy = null; // displaced vertex positions, px
+
+  function sizeGridMask() {
+    maskDpr = Math.min(2, window.devicePixelRatio || 1);
     gridMask = document.createElement('canvas');
-    gridMask.width = Math.max(1, Math.round(window.innerWidth * dpr));
-    gridMask.height = Math.max(1, Math.round(window.innerHeight * dpr));
-    var g = gridMask.getContext('2d');
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    gridMask.width = Math.max(1, Math.round(window.innerWidth * maskDpr));
+    gridMask.height = Math.max(1, Math.round(window.innerHeight * maskDpr));
+    maskCtx = gridMask.getContext('2d');
+    dpx = new Float32Array(COLS * ROWS);
+    dpy = new Float32Array(COLS * ROWS);
+  }
+
+  // Redraw the net with vertices slid along the depth gradient — the mesh
+  // stretches into dents like real fabric.
+  function drawNetMask() {
+    var g = maskCtx;
+    g.setTransform(maskDpr, 0, 0, maskDpr, 0, 0);
     g.clearRect(0, 0, window.innerWidth, window.innerHeight);
-    g.strokeStyle = 'rgba(255,255,255,0.95)';
-    g.lineWidth = 1;
-    g.shadowColor = 'rgba(255,255,255,0.95)';
-    g.shadowBlur = 6;
-    g.beginPath();
-    for (var x = GRID_SPACING / 2; x < window.innerWidth; x += GRID_SPACING) {
-      g.moveTo(x, 0); g.lineTo(x, window.innerHeight);
-    }
-    for (var y = GRID_SPACING / 2; y < window.innerHeight; y += GRID_SPACING) {
-      g.moveTo(0, y); g.lineTo(window.innerWidth, y);
-    }
-    g.stroke();
-    // slightly brighter knots where the lines cross
-    g.fillStyle = 'rgba(255,255,255,1)';
-    g.shadowBlur = 2;
-    for (var dx = GRID_SPACING / 2; dx < window.innerWidth; dx += GRID_SPACING) {
-      for (var dy = GRID_SPACING / 2; dy < window.innerHeight; dy += GRID_SPACING) {
-        g.beginPath(); g.arc(dx, dy, 1.5, 0, 6.2832); g.fill();
+    var st = NET_STRETCH;
+    for (var y = 0; y < ROWS; y++) {
+      for (var x = 0; x < COLS; x++) {
+        var i = y * COLS + x;
+        var xm = x > 0 ? nu[i - 1] : nu[i];
+        var xp = x < COLS - 1 ? nu[i + 1] : nu[i];
+        var ym = y > 0 ? nu[i - COLS] : nu[i];
+        var yp = y < ROWS - 1 ? nu[i + COLS] : nu[i];
+        dpx[i] = x * netSX - st * (xp - xm) / (2 * netSX);
+        dpy[i] = y * netSY - st * (yp - ym) / (2 * netSY);
       }
     }
+    // Build the mesh path once, then stroke it three times: wide faint
+    // strokes fake the glow (shadowBlur is too slow per-frame in software).
+    g.beginPath();
+    for (var ry = 0; ry < ROWS; ry++) {
+      var r0 = ry * COLS;
+      g.moveTo(dpx[r0], dpy[r0]);
+      for (var rx = 1; rx < COLS; rx++) g.lineTo(dpx[r0 + rx], dpy[r0 + rx]);
+    }
+    for (var cx = 0; cx < COLS; cx++) {
+      g.moveTo(dpx[cx], dpy[cx]);
+      for (var cy = 1; cy < ROWS; cy++) g.lineTo(dpx[cy * COLS + cx], dpy[cy * COLS + cx]);
+    }
+    g.strokeStyle = 'rgba(255,255,255,0.10)';
+    g.lineWidth = 7;
+    g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,0.28)';
+    g.lineWidth = 3;
+    g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,0.95)';
+    g.lineWidth = 1;
+    g.stroke();
+    // knots where the lines cross
+    g.fillStyle = 'rgba(255,255,255,1)';
+    g.beginPath();
+    for (var k = 0; k < COLS * ROWS; k++) {
+      g.moveTo(dpx[k] + 1.5, dpy[k]);
+      g.arc(dpx[k], dpy[k], 1.5, 0, 6.2832);
+    }
+    g.fill();
   }
 
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -155,15 +205,24 @@
   function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    COLS = Math.max(8, Math.ceil(window.innerWidth / CONFIG.px));
-    ROWS = Math.max(8, Math.ceil(window.innerHeight / CONFIG.px));
+    if (NET) {
+      // The membrane vertices ARE the wash pixels: one net cell each.
+      COLS = Math.max(8, Math.round(window.innerWidth / NET_SPACING) + 1);
+      ROWS = Math.max(8, Math.round(window.innerHeight / NET_SPACING) + 1);
+      netSX = window.innerWidth / (COLS - 1);
+      netSY = window.innerHeight / (ROWS - 1);
+      nu = new Float32Array(COLS * ROWS);
+      nv = new Float32Array(COLS * ROWS);
+      sizeGridMask();
+    } else {
+      COLS = Math.max(8, Math.ceil(window.innerWidth / CONFIG.px));
+      ROWS = Math.max(8, Math.ceil(window.innerHeight / CONFIG.px));
+      cur = new Float32Array(COLS * ROWS);
+      nxt = new Float32Array(COLS * ROWS);
+    }
     off.width = COLS;
     off.height = ROWS;
-    cur = new Float32Array(COLS * ROWS);
-    nxt = new Float32Array(COLS * ROWS);
-    hgt = new Float32Array(COLS * ROWS);
     img = octx.createImageData(COLS, ROWS);
-    if (NET) buildGridMask();
   }
   resize();
   window.addEventListener('resize', resize);
@@ -171,40 +230,59 @@
   // ---------- interaction ----------
   var drops = []; // recent inputs: {cx, cy, t} — the gradient is measured from these
   function drop(px, py, radius, strength) {
-    if (NET) {
-      // singular ring for the net variant (strength normalized to tap = 1)
-      ripples.push({ x: px, y: py, t0: performance.now() / 1000, s: strength / 260 });
-      if (ripples.length > 16) ripples.shift();
-    } else {
-      var cx = (px / CONFIG.px) | 0;
-      var cy = (py / CONFIG.px) | 0;
-      var r = Math.ceil(radius);
-      for (var y = -r; y <= r; y++) {
-        for (var x = -r; x <= r; x++) {
-          var d = Math.sqrt(x * x + y * y);
-          if (d > radius) continue;
-          var gx = cx + x, gy = cy + y;
-          if (gx <= 0 || gx >= COLS - 1 || gy <= 0 || gy >= ROWS - 1) continue;
-          cur[gy * COLS + gx] += strength * (1 - d / radius);
-        }
+    var cx = (px / CONFIG.px) | 0;
+    var cy = (py / CONFIG.px) | 0;
+    var r = Math.ceil(radius);
+    for (var y = -r; y <= r; y++) {
+      for (var x = -r; x <= r; x++) {
+        var d = Math.sqrt(x * x + y * y);
+        if (d > radius) continue;
+        var gx = cx + x, gy = cy + y;
+        if (gx <= 0 || gx >= COLS - 1 || gy <= 0 || gy >= ROWS - 1) continue;
+        cur[gy * COLS + gx] += strength * (1 - d / radius);
       }
     }
-    drops.push({ cx: (px / CONFIG.px) | 0, cy: (py / CONFIG.px) | 0, t: performance.now() });
+    drops.push({ cx: cx, cy: cy, t: performance.now() });
     if (drops.length > 12) drops.shift();
     lastActive = performance.now();
   }
 
   var lastX = -1e9, lastY = -1e9, lastActive = 0, lastIdle = 0;
-  window.addEventListener('pointermove', function (e) {
-    var dx = e.clientX - lastX, dy = e.clientY - lastY;
-    if (dx * dx + dy * dy > 30 * 30) {
-      drop(e.clientX, e.clientY, CONFIG.hoverRadius, CONFIG.hoverStrength);
-      lastX = e.clientX; lastY = e.clientY;
-    }
-  }, { passive: true });
-  window.addEventListener('pointerdown', function (e) {
-    drop(e.clientX, e.clientY, CONFIG.tapRadius, CONFIG.tapStrength);
-  }, { passive: true });
+  function notePt(x, y) { // net variant: remember a touch point for the gradient
+    netPts.push({ x: x, y: y, t: performance.now() });
+    if (netPts.length > 12) netPts.shift();
+    lastActive = performance.now();
+  }
+  if (NET) {
+    window.addEventListener('pointermove', function (e) {
+      var dx = e.clientX - lastX, dy = e.clientY - lastY;
+      if (pressing) { pressX = e.clientX; pressY = e.clientY; }
+      if (dx * dx + dy * dy > 30 * 30) {
+        if (!pressing) brush(e.clientX, e.clientY);
+        notePt(e.clientX, e.clientY);
+        lastX = e.clientX; lastY = e.clientY;
+      }
+    }, { passive: true });
+    window.addEventListener('pointerdown', function (e) {
+      pressing = true; pressX = e.clientX; pressY = e.clientY;
+      notePt(e.clientX, e.clientY);
+    }, { passive: true });
+    var release = function () { pressing = false; };
+    window.addEventListener('pointerup', release);
+    window.addEventListener('pointercancel', release);
+    window.addEventListener('blur', release);
+  } else {
+    window.addEventListener('pointermove', function (e) {
+      var dx = e.clientX - lastX, dy = e.clientY - lastY;
+      if (dx * dx + dy * dy > 30 * 30) {
+        drop(e.clientX, e.clientY, CONFIG.hoverRadius, CONFIG.hoverStrength);
+        lastX = e.clientX; lastY = e.clientY;
+      }
+    }, { passive: true });
+    window.addEventListener('pointerdown', function (e) {
+      drop(e.clientX, e.clientY, CONFIG.tapRadius, CONFIG.tapStrength);
+    }, { passive: true });
+  }
 
   // ---------- simulation ----------
   function step() {
@@ -242,15 +320,13 @@
     var now = performance.now();
     // prune expired drops
     while (drops.length && now - drops[0].t > 5000) drops.shift();
-    var src = NET ? hgt : cur; // analytic rings vs. heightfield
     var j = 0;
     for (var y = 0; y < ROWS; y++) {
       var row = y * COLS;
       for (var x = 0; x < COLS; x++) {
         var i = row + x;
-        var ah = Math.abs(src[i]);
-        var r = 255, g = 255, b = 255, a = 1;
-        if (NET) a = 0; // invisible until the water moves
+        var ah = Math.abs(cur[i]);
+        var r = 255, g = 255, b = 255;
         if (ah >= 1.5) {
           var dMin = 1e9;
           for (var d = 0; d < drops.length; d++) {
@@ -264,52 +340,96 @@
           var ramp = t < 0.5
             ? lerpC(PASTEL_PINK, PASTEL_PURPLE, t * 2)
             : lerpC(PASTEL_PURPLE, PASTEL_BLUE, (t - 0.5) * 2);
-          var k = ah * (NET ? 0.06 : 0.02);
-          if (k > (NET ? 1 : 0.8)) k = (NET ? 1 : 0.8);
+          var k = ah * 0.02;
+          if (k > 0.8) k = 0.8;
           // Fade the color out beyond the gradient's range so far-travelled
           // waves settle back to white instead of tinting the whole pond.
           var fade = 1 - (dMin - 30) / 60;
           if (fade < 0) fade = 0; else if (fade > 1) fade = 1;
           k *= fade;
-          if (NET) {
-            // Full-strength gradient color; the wave height drives opacity,
-            // so the net shimmers with the ripples.
-            r = ramp[0]; g = ramp[1]; b = ramp[2]; a = k;
-          } else {
-            r = 255 + (ramp[0] - 255) * k;
-            g = 255 + (ramp[1] - 255) * k;
-            b = 255 + (ramp[2] - 255) * k;
+          r = 255 + (ramp[0] - 255) * k;
+          g = 255 + (ramp[1] - 255) * k;
+          b = 255 + (ramp[2] - 255) * k;
+        }
+        data[j] = r; data[j + 1] = g; data[j + 2] = b; data[j + 3] = 255;
+        j += 4;
+      }
+    }
+    octx.putImageData(img, 0, 0);
+    view.drawImage(off, 0, 0, canvas.width, canvas.height);
+  }
+
+  // Net variant render: soft gradient color whose alpha follows membrane
+  // energy (|depth| + |velocity|), painted through the stretched mesh.
+  function renderNet() {
+    var data = img.data;
+    var now = performance.now();
+    while (netPts.length && now - netPts[0].t > 5000) netPts.shift();
+    var j = 0;
+    for (var y = 0; y < ROWS; y++) {
+      var py = y * netSY;
+      for (var x = 0; x < COLS; x++) {
+        var i = y * COLS + x;
+        var energy = Math.abs(nu[i]) * 0.04 + Math.abs(nv[i]) * 0.10;
+        var r = 255, g = 255, b = 255, a = 0;
+        if (energy > 0.02) {
+          var px = x * netSX;
+          var dMin = 1e9;
+          for (var n = 0; n < netPts.length; n++) {
+            var dx = px - netPts[n].x, dy = py - netPts[n].y;
+            var dd = Math.sqrt(dx * dx + dy * dy);
+            if (dd < dMin) dMin = dd;
           }
+          var t = dMin / 220;
+          if (t > 1) t = 1;
+          var ramp = t < 0.5
+            ? lerpC(PASTEL_PINK, PASTEL_PURPLE, t * 2)
+            : lerpC(PASTEL_PURPLE, PASTEL_BLUE, (t - 0.5) * 2);
+          var k = energy > 1 ? 1 : energy;
+          var fade = 1 - (dMin - 160) / 240;
+          if (fade < 0) fade = 0; else if (fade > 1) fade = 1;
+          k *= fade;
+          r = ramp[0]; g = ramp[1]; b = ramp[2]; a = k;
         }
         data[j] = r; data[j + 1] = g; data[j + 2] = b; data[j + 3] = a * 255;
         j += 4;
       }
     }
     octx.putImageData(img, 0, 0);
-    if (NET) {
-      // Paint the soft gradient through the crisp net mask.
-      view.clearRect(0, 0, canvas.width, canvas.height);
-      view.drawImage(off, 0, 0, canvas.width, canvas.height);
-      view.globalCompositeOperation = 'destination-in';
-      view.drawImage(gridMask, 0, 0, canvas.width, canvas.height);
-      view.globalCompositeOperation = 'source-over';
-    } else {
-      view.drawImage(off, 0, 0, canvas.width, canvas.height);
-    }
+    drawNetMask();
+    // Paint the soft gradient through the crisp stretched net.
+    view.clearRect(0, 0, canvas.width, canvas.height);
+    view.drawImage(off, 0, 0, canvas.width, canvas.height);
+    view.globalCompositeOperation = 'destination-in';
+    view.drawImage(gridMask, 0, 0, canvas.width, canvas.height);
+    view.globalCompositeOperation = 'source-over';
   }
 
   // ---------- main loop ----------
   var raf = null, running = true;
   function frame(now) {
     if (!running) return;
-    if (NET) computeHeights(now);
-    else step();
-    render();
-    if (CONFIG.idleEvery > 0 && now - lastIdle > CONFIG.idleEvery &&
-        now - lastActive > CONFIG.idleEvery) {
-      lastIdle = now;
-      drop(Math.random() * canvas.width, Math.random() * canvas.height,
-           CONFIG.idleRadius, CONFIG.idleStrength);
+    if (NET) {
+      stepNet(now);
+      renderNet();
+      // Idle poke: a gentle press that dents and releases on its own.
+      if (CONFIG.idleEvery > 0 && now - lastIdle > CONFIG.idleEvery &&
+          now - lastActive > CONFIG.idleEvery) {
+        lastIdle = now;
+        autoPress.x = Math.random() * canvas.width;
+        autoPress.y = Math.random() * canvas.height;
+        autoPress.until = now + 350;
+        notePt(autoPress.x, autoPress.y);
+      }
+    } else {
+      step();
+      render();
+      if (CONFIG.idleEvery > 0 && now - lastIdle > CONFIG.idleEvery &&
+          now - lastActive > CONFIG.idleEvery) {
+        lastIdle = now;
+        drop(Math.random() * canvas.width, Math.random() * canvas.height,
+             CONFIG.idleRadius, CONFIG.idleStrength);
+      }
     }
     raf = requestAnimationFrame(frame);
   }
