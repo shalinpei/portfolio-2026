@@ -10,6 +10,9 @@
  *
  * Delete this file + the loader snippet in index.html to revert completely.
  *
+ * Variant: ?net=1 paints the same gradient on the invisible net instead of
+ * flat color — identical water physics, new texture.
+ *
  * All aesthetic knobs are in CONFIG below.
  */
 (function () {
@@ -34,6 +37,41 @@
   var PASTEL_PURPLE = [220, 200, 238];
   var PASTEL_BLUE = [200, 222, 246];
 
+  // Variant flag: ?net=1 paints the gradient on the invisible net.
+  var NET = new URLSearchParams(location.search).has('net');
+
+  var gridMask = null;
+  var GRID_SPACING = 48; // net cell size, px
+  function buildGridMask() {
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    gridMask = document.createElement('canvas');
+    gridMask.width = Math.max(1, Math.round(window.innerWidth * dpr));
+    gridMask.height = Math.max(1, Math.round(window.innerHeight * dpr));
+    var g = gridMask.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    g.strokeStyle = 'rgba(255,255,255,0.95)';
+    g.lineWidth = 2.5;
+    g.shadowColor = 'rgba(255,255,255,0.95)';
+    g.shadowBlur = 8;
+    g.beginPath();
+    for (var x = GRID_SPACING / 2; x < window.innerWidth; x += GRID_SPACING) {
+      g.moveTo(x, 0); g.lineTo(x, window.innerHeight);
+    }
+    for (var y = GRID_SPACING / 2; y < window.innerHeight; y += GRID_SPACING) {
+      g.moveTo(0, y); g.lineTo(window.innerWidth, y);
+    }
+    g.stroke();
+    // slightly brighter knots where the lines cross
+    g.fillStyle = 'rgba(255,255,255,1)';
+    g.shadowBlur = 4;
+    for (var dx = GRID_SPACING / 2; dx < window.innerWidth; dx += GRID_SPACING) {
+      for (var dy = GRID_SPACING / 2; dy < window.innerHeight; dy += GRID_SPACING) {
+        g.beginPath(); g.arc(dx, dy, 3, 0, 6.2832); g.fill();
+      }
+    }
+  }
+
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   // ---------- setup ----------
@@ -50,7 +88,7 @@
   document.head.appendChild(style);
 
   var view = canvas.getContext('2d');
-  view.imageSmoothingEnabled = false;
+  view.imageSmoothingEnabled = !NET; // the net variant upscales softly under crisp lines
 
   var off = document.createElement('canvas');
   var octx = off.getContext('2d');
@@ -67,6 +105,7 @@
     cur = new Float32Array(COLS * ROWS);
     nxt = new Float32Array(COLS * ROWS);
     img = octx.createImageData(COLS, ROWS);
+    if (NET) buildGridMask();
   }
   resize();
   window.addEventListener('resize', resize);
@@ -145,7 +184,8 @@
       for (var x = 0; x < COLS; x++) {
         var i = row + x;
         var ah = Math.abs(cur[i]);
-        var r = 255, g = 255, b = 255;
+        var r = 255, g = 255, b = 255, a = 1;
+        if (NET) a = 0; // invisible until the water moves
         if (ah >= 1.5) {
           var dMin = 1e9;
           for (var d = 0; d < drops.length; d++) {
@@ -159,23 +199,38 @@
           var ramp = t < 0.5
             ? lerpC(PASTEL_PINK, PASTEL_PURPLE, t * 2)
             : lerpC(PASTEL_PURPLE, PASTEL_BLUE, (t - 0.5) * 2);
-          var k = ah * 0.02;
-          if (k > 0.8) k = 0.8;
+          var k = ah * (NET ? 0.035 : 0.02);
+          if (k > (NET ? 0.95 : 0.8)) k = (NET ? 0.95 : 0.8);
           // Fade the color out beyond the gradient's range so far-travelled
           // waves settle back to white instead of tinting the whole pond.
           var fade = 1 - (dMin - 30) / 60;
           if (fade < 0) fade = 0; else if (fade > 1) fade = 1;
           k *= fade;
-          r = 255 + (ramp[0] - 255) * k;
-          g = 255 + (ramp[1] - 255) * k;
-          b = 255 + (ramp[2] - 255) * k;
+          if (NET) {
+            // Full-strength gradient color; the wave height drives opacity,
+            // so the net shimmers with the ripples.
+            r = ramp[0]; g = ramp[1]; b = ramp[2]; a = k;
+          } else {
+            r = 255 + (ramp[0] - 255) * k;
+            g = 255 + (ramp[1] - 255) * k;
+            b = 255 + (ramp[2] - 255) * k;
+          }
         }
-        data[j] = r; data[j + 1] = g; data[j + 2] = b; data[j + 3] = 255;
+        data[j] = r; data[j + 1] = g; data[j + 2] = b; data[j + 3] = a * 255;
         j += 4;
       }
     }
     octx.putImageData(img, 0, 0);
-    view.drawImage(off, 0, 0, canvas.width, canvas.height);
+    if (NET) {
+      // Paint the soft gradient through the crisp net mask.
+      view.clearRect(0, 0, canvas.width, canvas.height);
+      view.drawImage(off, 0, 0, canvas.width, canvas.height);
+      view.globalCompositeOperation = 'destination-in';
+      view.drawImage(gridMask, 0, 0, canvas.width, canvas.height);
+      view.globalCompositeOperation = 'source-over';
+    } else {
+      view.drawImage(off, 0, 0, canvas.width, canvas.height);
+    }
   }
 
   // ---------- main loop ----------
