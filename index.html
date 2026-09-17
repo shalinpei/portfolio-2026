@@ -73,13 +73,14 @@
 })();
 </script>
 <script>
-// Ripple prototype loader: ?ripple=1 enables the pixelated water background.
+// Ripple background loader: the pastel gradient is the default look.
+// Override with ?ripple=1 (mono), ?ripple=3 (grid), ?ripple=0 (gray).
 // Delete this block + ripple.js to revert completely.
-if (new URLSearchParams(location.search).has('ripple')) {
+(function () {
   var rs = document.createElement('script');
-  rs.src = 'ripple.js?v=20260917c'; // bump on every tweak so browsers never serve a stale copy
+  rs.src = 'ripple.js?v=20260917d'; // bump on every tweak so browsers never serve a stale copy
   document.body.appendChild(rs);
-}
+})();
 </script>
 </body>
 </html>

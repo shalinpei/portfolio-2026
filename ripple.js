@@ -1,8 +1,9 @@
-/* Pixelated water-ripple background — PROTOTYPE.
+/* Pixelated water-ripple background.
  *
- * Enabled by adding ?ripple to the URL (e.g. /?ripple=1). Nothing changes
- * on the default page. Delete this file + the loader snippet in index.html
- * to revert completely.
+ * The pastel gradient is the default look. Override with ?ripple=1
+ * (monochromatic crimson tint), ?ripple=3 (magical invisible grid), or
+ * ?ripple=0 (original gray shading). Delete this file + the loader snippet
+ * in index.html to revert completely.
  *
  * How it works: a classic two-buffer heightfield simulation runs on a
  * low-res grid; the grid is drawn to a tiny offscreen canvas and scaled up
@@ -33,13 +34,12 @@
 
   var ACCENT = [194, 17, 94]; // crimson magenta — matches link color
 
-  // Render mode from the URL: ?ripple=1 (or bare ?ripple) = monochromatic
-  // crimson tint; ?ripple=2 = pastel pink->purple->blue gradient by distance
-  // from the input; ?ripple=0 = original gray shading; ?ripple=3 = magical
-  // grid that is invisible until touched, revealed by an expanding ring.
+  // Render mode from the URL: the pastel gradient (2) is the default.
+  // Override with ?ripple=1 (monochromatic crimson tint), ?ripple=3
+  // (magical invisible grid), or ?ripple=0 (original gray shading).
   var MODE = (function () {
     var m = new URLSearchParams(location.search).get('ripple');
-    return m === '3' ? 3 : m === '2' ? 2 : m === '0' ? 0 : 1;
+    return m === '3' ? 3 : m === '1' ? 1 : m === '0' ? 0 : 2;
   })();
 
   // Palettes
