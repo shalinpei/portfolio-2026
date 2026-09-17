@@ -53,11 +53,23 @@
   <h1 class="name">Shalin Pei</h1>
   <p>is a Brooklyn-based design executive who led design at Coinbase, Facebook, and Google. She is currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer>
-    <a href="mailto:me@shalinpei.com">Email</a>
+    <span id="email-slot"><noscript>me [at] shalinpei [dot] com</noscript></span>
     <a href="https://www.linkedin.com/in/shalinpei" target="_blank" rel="noopener">LinkedIn</a>
     <a href="https://medium.com/@shalinpei" target="_blank" rel="noopener">Medium</a>
     <a href="https://instagram.com/shalinpei" target="_blank" rel="noopener">Instagram</a>
   </footer>
 </main>
+<script>
+(function () {
+  // Email address assembled at runtime so the plain "user@domain" string
+  // never appears in the HTML source. Deters basic scrapers only.
+  var slot = document.getElementById("email-slot");
+  if (!slot) return;
+  var a = document.createElement("a");
+  a.href = "mailto:" + ["me", "shalinpei.com"].join("@");
+  a.textContent = "Email";
+  slot.appendChild(a);
+})();
+</script>
 </body>
 </html>
