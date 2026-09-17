@@ -45,10 +45,13 @@
   // like fabric instead of just changing brightness.
   var NET_SPACING = 24;   // net cell size, px
   var NET_TENSION = 0.28; // wave-speed squared (must stay <= 0.5 for stability)
-  var NET_DAMP = 0.99;    // velocity retained per frame (higher = bouncier)
+  var NET_DAMP = 0.97;    // velocity retained per frame (higher = bouncier)
+  var NET_SETTLE = 0.09;  // extra damping near stillness — kills tertiary
+                          // tremble while leaving the main motion lively
   var PRESS_R = 110;      // finger radius, px
-  var PRESS_DEPTH = 26;   // full-press dent depth, in depth units
-  var PRESS_K = 0.3;      // how hard the finger forces the dent
+  var PRESS_DEPTH = 30;   // full-press dent depth, in depth units
+  var PRESS_K = 0.4;      // how fast the mesh follows the finger (position
+                          // lerp — a contraction, so a held press can't oscillate)
   var NET_STRETCH = 30;   // px the mesh slides per unit of depth gradient
   var BRUSH_KICK = 1.6;   // velocity kick from a hover brush
 
@@ -77,18 +80,23 @@
           if (dd > R) continue;
           var fall = 0.5 * (1 + Math.cos(Math.PI * dd / R)); // smooth dent
           var i = jy * COLS + ix;
-          nv[i] += (-depth * fall - nu[i]) * PRESS_K;
+          // Kinematic press: ease the mesh toward the dent and bleed off
+          // velocity. A held press holds still; release starts from rest.
+          nu[i] += (-depth * fall - nu[i]) * PRESS_K;
+          nv[i] *= 0.5;
         }
       }
     }
     // Tension propagates, damping settles. Edges stay pinned (net on a frame).
-    var ten = NET_TENSION, damp = NET_DAMP;
+    // Damping is stronger near stillness so tertiary ripples die fast.
+    var ten = NET_TENSION, damp = NET_DAMP, settle = NET_SETTLE;
     for (var y = 1; y < ROWS - 1; y++) {
       var row = y * COLS;
       for (var x = 1; x < COLS - 1; x++) {
         var i = row + x;
         var lap = (nu[i - 1] + nu[i + 1] + nu[i - COLS] + nu[i + COLS]) * 0.25 - nu[i];
-        nv[i] = (nv[i] + lap * ten) * damp;
+        var v = nv[i] + lap * ten;
+        nv[i] = v * damp * (1 - settle / (1 + Math.abs(v) * 0.5));
       }
     }
     for (var yy = 1; yy < ROWS - 1; yy++) {
