@@ -72,5 +72,14 @@
   slot.appendChild(a);
 })();
 </script>
+<script>
+// Ripple prototype loader: ?ripple=1 enables the pixelated water background.
+// Delete this block + ripple.js to revert completely.
+if (new URLSearchParams(location.search).has('ripple')) {
+  var rs = document.createElement('script');
+  rs.src = 'ripple.js';
+  document.body.appendChild(rs);
+}
+</script>
 </body>
 </html>
