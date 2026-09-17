@@ -37,6 +37,63 @@
   var PASTEL_PURPLE = [220, 200, 238];
   var PASTEL_BLUE = [200, 222, 246];
 
+  // ---------- singular ripple model (net variant) ----------
+  // The heightfield makes wave trains; here each touch emits ONE clean ring:
+  // a gaussian crest with a slight trailing trough, amplitude spreading as
+  // 1/sqrt(r) like real ripples, plus a gentle angular wobble so it feels
+  // like water instead of UI.
+  var RIPPLE_SPEED = 420; // px/s
+  var RIPPLE_WIDTH = 26;  // ring thickness, px (gaussian sigma)
+  var RIPPLE_TAU = 1.5;   // amplitude decay time, s
+  var RIPPLE_LIFE = 2.8;  // prune ripples older than this, s
+  var RIPPLE_H0 = 30;     // crest height in wave units at birth
+
+  var ripples = []; // {x, y, t0, s} — px, seconds, strength (tap = 1)
+  var hgt = null;   // analytic heights for the net variant
+
+  function computeHeights(nowMs) {
+    var now = nowMs / 1000;
+    while (ripples.length && now - ripples[0].t0 > RIPPLE_LIFE) ripples.shift();
+    hgt.fill(0);
+    if (!ripples.length) return;
+    var cell = CONFIG.px, W = RIPPLE_WIDTH;
+    for (var n = 0; n < ripples.length; n++) {
+      var rp = ripples[n];
+      var age = now - rp.t0;
+      if (age <= 0) continue;
+      var R = RIPPLE_SPEED * age;
+      var decay = Math.exp(-age / RIPPLE_TAU);
+      var spread = 1 / Math.sqrt(Math.max(R, 40) / 40);
+      var base = RIPPLE_H0 * rp.s * decay * spread;
+      var reach = R + W * 4;
+      var x0 = Math.max(0, Math.floor((rp.x - reach) / cell));
+      var x1 = Math.min(COLS - 1, Math.ceil((rp.x + reach) / cell));
+      var y0 = Math.max(0, Math.floor((rp.y - reach) / cell));
+      var y1 = Math.min(ROWS - 1, Math.ceil((rp.y + reach) / cell));
+      for (var cy = y0; cy <= y1; cy++) {
+        for (var cx = x0; cx <= x1; cx++) {
+          var dx = cx * cell - rp.x, dy = cy * cell - rp.y;
+          var d = Math.sqrt(dx * dx + dy * dy);
+          var th = Math.atan2(dy, dx);
+          var wob = 1 + 0.10 * Math.sin(3 * th + 2.0 * age)
+                      + 0.06 * Math.sin(5 * th - 1.3 * age);
+          var Rw = R * (1 + 0.04 * Math.sin(2 * th + 1.1 * age));
+          var dd = (d - Rw) / W;
+          var h = base * wob * Math.exp(-dd * dd);
+          // slight trailing trough just inside the crest
+          var dt = (d - (Rw - W * 1.5)) / W;
+          h -= base * 0.35 * Math.exp(-dt * dt);
+          // impact flash right at the touch while the ring is young
+          if (age < 0.3) {
+            var fr = d / (W * 2);
+            h += base * 1.4 * (1 - age / 0.3) * Math.exp(-fr * fr);
+          }
+          hgt[cy * COLS + cx] += h;
+        }
+      }
+    }
+  }
+
   // Variant flag: ?net=1 paints the gradient on the invisible net.
   var NET = new URLSearchParams(location.search).has('net');
 
@@ -104,6 +161,7 @@
     off.height = ROWS;
     cur = new Float32Array(COLS * ROWS);
     nxt = new Float32Array(COLS * ROWS);
+    hgt = new Float32Array(COLS * ROWS);
     img = octx.createImageData(COLS, ROWS);
     if (NET) buildGridMask();
   }
@@ -113,19 +171,25 @@
   // ---------- interaction ----------
   var drops = []; // recent inputs: {cx, cy, t} — the gradient is measured from these
   function drop(px, py, radius, strength) {
-    var cx = (px / CONFIG.px) | 0;
-    var cy = (py / CONFIG.px) | 0;
-    var r = Math.ceil(radius);
-    for (var y = -r; y <= r; y++) {
-      for (var x = -r; x <= r; x++) {
-        var d = Math.sqrt(x * x + y * y);
-        if (d > radius) continue;
-        var gx = cx + x, gy = cy + y;
-        if (gx <= 0 || gx >= COLS - 1 || gy <= 0 || gy >= ROWS - 1) continue;
-        cur[gy * COLS + gx] += strength * (1 - d / radius);
+    if (NET) {
+      // singular ring for the net variant (strength normalized to tap = 1)
+      ripples.push({ x: px, y: py, t0: performance.now() / 1000, s: strength / 260 });
+      if (ripples.length > 16) ripples.shift();
+    } else {
+      var cx = (px / CONFIG.px) | 0;
+      var cy = (py / CONFIG.px) | 0;
+      var r = Math.ceil(radius);
+      for (var y = -r; y <= r; y++) {
+        for (var x = -r; x <= r; x++) {
+          var d = Math.sqrt(x * x + y * y);
+          if (d > radius) continue;
+          var gx = cx + x, gy = cy + y;
+          if (gx <= 0 || gx >= COLS - 1 || gy <= 0 || gy >= ROWS - 1) continue;
+          cur[gy * COLS + gx] += strength * (1 - d / radius);
+        }
       }
     }
-    drops.push({ cx: cx, cy: cy, t: performance.now() });
+    drops.push({ cx: (px / CONFIG.px) | 0, cy: (py / CONFIG.px) | 0, t: performance.now() });
     if (drops.length > 12) drops.shift();
     lastActive = performance.now();
   }
@@ -178,12 +242,13 @@
     var now = performance.now();
     // prune expired drops
     while (drops.length && now - drops[0].t > 5000) drops.shift();
+    var src = NET ? hgt : cur; // analytic rings vs. heightfield
     var j = 0;
     for (var y = 0; y < ROWS; y++) {
       var row = y * COLS;
       for (var x = 0; x < COLS; x++) {
         var i = row + x;
-        var ah = Math.abs(cur[i]);
+        var ah = Math.abs(src[i]);
         var r = 255, g = 255, b = 255, a = 1;
         if (NET) a = 0; // invisible until the water moves
         if (ah >= 1.5) {
@@ -237,7 +302,8 @@
   var raf = null, running = true;
   function frame(now) {
     if (!running) return;
-    step();
+    if (NET) computeHeights(now);
+    else step();
     render();
     if (CONFIG.idleEvery > 0 && now - lastIdle > CONFIG.idleEvery &&
         now - lastActive > CONFIG.idleEvery) {
