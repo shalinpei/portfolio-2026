@@ -35,10 +35,11 @@
 
   // Render mode from the URL: ?ripple=1 (or bare ?ripple) = monochromatic
   // crimson tint; ?ripple=2 = pastel pink->purple->blue gradient by distance
-  // from the input; ?ripple=0 = original gray shading.
+  // from the input; ?ripple=0 = original gray shading; ?ripple=3 = magical
+  // grid that is invisible until touched, revealed by an expanding ring.
   var MODE = (function () {
     var m = new URLSearchParams(location.search).get('ripple');
-    return m === '2' ? 2 : m === '0' ? 0 : 1;
+    return m === '3' ? 3 : m === '2' ? 2 : m === '0' ? 0 : 1;
   })();
 
   // Palettes
@@ -70,6 +71,156 @@
 
   var view = canvas.getContext('2d');
   view.imageSmoothingEnabled = false;
+
+  // ---------- mode 3: the invisible grid ----------
+  // No water here. The surface is a net you can't see until you touch it:
+  // each touch fires a ring of visibility that expands outward and fades,
+  // the grid dissolving back to invisible behind the wavefront.
+  if (MODE === 3) { initGridMode(canvas); return; }
+
+  function initGridMode(canvas) {
+    var SPACING = 48;   // grid cell size, px
+    var SPEED = 560;    // ring expansion, px/s
+    var LIFE = 1.7;     // pulse lifetime, s
+    var RING_W = 120;   // visible band width, px
+    var ACC = '194,17,94'; // crimson magenta
+
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var W = 0, H = 0;
+    var view = canvas.getContext('2d');
+    view.imageSmoothingEnabled = true; // crisp lines, not chunky pixels
+    canvas.style.imageRendering = 'auto';
+    var gridC = document.createElement('canvas'); // cached grid, full alpha
+    var maskC = document.createElement('canvas'); // per-frame reveal mask
+    var workC = document.createElement('canvas'); // grid masked by reveal
+
+    function drawGrid() {
+      var g = gridC.getContext('2d');
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, W, H);
+      g.strokeStyle = 'rgba(' + ACC + ',0.55)';
+      g.lineWidth = 1.5;
+      g.shadowColor = 'rgba(' + ACC + ',0.8)';
+      g.shadowBlur = 6;
+      g.beginPath();
+      for (var x = SPACING / 2; x < W; x += SPACING) { g.moveTo(x, 0); g.lineTo(x, H); }
+      for (var y = SPACING / 2; y < H; y += SPACING) { g.moveTo(0, y); g.lineTo(W, y); }
+      g.stroke();
+      g.fillStyle = 'rgba(' + ACC + ',0.85)';
+      g.shadowBlur = 4;
+      for (var dx = SPACING / 2; dx < W; dx += SPACING) {
+        for (var dy = SPACING / 2; dy < H; dy += SPACING) {
+          g.beginPath(); g.arc(dx, dy, 2, 0, 6.2832); g.fill();
+        }
+      }
+    }
+
+    function sizeAll() {
+      W = window.innerWidth; H = window.innerHeight;
+      [canvas, gridC, maskC, workC].forEach(function (c) {
+        c.width = Math.max(1, Math.round(W * dpr));
+        c.height = Math.max(1, Math.round(H * dpr));
+      });
+      drawGrid();
+    }
+    sizeAll();
+    window.addEventListener('resize', sizeAll);
+
+    var pulses = []; // {x, y, t0, s}
+    function pulse(x, y, s, force) {
+      var t = performance.now() / 1000;
+      var last = pulses[pulses.length - 1];
+      if (!force && last) {
+        var ddx = x - last.x, ddy = y - last.y;
+        if (ddx * ddx + ddy * ddy < 1600 && t - last.t0 < 0.25) return;
+      }
+      pulses.push({ x: x, y: y, t0: t, s: s });
+      if (pulses.length > 24) pulses.shift();
+      lastActive = t;
+    }
+
+    var raf = null, running = true, toggleOn = true, lastActive = 0;
+    function frame() {
+      if (!running) return;
+      var now = performance.now() / 1000;
+      while (pulses.length && now - pulses[0].t0 > LIFE) pulses.shift();
+      // No idle pulses here: the net stays invisible until touched.
+
+      // reveal mask: black, with an additive expanding ring per pulse
+      var m = maskC.getContext('2d');
+      m.setTransform(dpr, 0, 0, dpr, 0, 0);
+      m.globalCompositeOperation = 'source-over';
+      m.clearRect(0, 0, W, H); // transparent base: destination-in hides all
+      m.globalCompositeOperation = 'lighter';
+      var R = Math.sqrt(W * W + H * H);
+      for (var i = 0; i < pulses.length; i++) {
+        var p = pulses[i], age = now - p.t0;
+        var amp = p.s * Math.pow(1 - age / LIFE, 1.6);
+        if (amp <= 0.01) continue;
+        var r = SPEED * age, u = r / R, w = RING_W / R;
+        var rg = m.createRadialGradient(p.x, p.y, 0, p.x, p.y, R);
+        rg.addColorStop(0, 'rgba(255,255,255,0)');
+        rg.addColorStop(Math.max(0, u - w), 'rgba(255,255,255,0)');
+        rg.addColorStop(Math.min(1, u), 'rgba(255,255,255,' + amp.toFixed(3) + ')');
+        rg.addColorStop(Math.min(1, u + w), 'rgba(255,255,255,0)');
+        rg.addColorStop(1, 'rgba(255,255,255,0)');
+        m.fillStyle = rg;
+        m.fillRect(0, 0, W, H);
+        if (age < 0.45) { // instant touch flash at the origin
+          var fa = (p.s * (1 - age / 0.45)).toFixed(3);
+          var fg = m.createRadialGradient(p.x, p.y, 0, p.x, p.y, 90);
+          fg.addColorStop(0, 'rgba(255,255,255,' + fa + ')');
+          fg.addColorStop(1, 'rgba(255,255,255,0)');
+          m.fillStyle = fg;
+          m.fillRect(p.x - 90, p.y - 90, 180, 180);
+        }
+      }
+
+      // grid through the mask
+      var wk = workC.getContext('2d');
+      wk.setTransform(1, 0, 0, 1, 0, 0);
+      wk.globalCompositeOperation = 'source-over';
+      wk.clearRect(0, 0, workC.width, workC.height);
+      wk.drawImage(gridC, 0, 0);
+      wk.globalCompositeOperation = 'destination-in';
+      wk.drawImage(maskC, 0, 0);
+
+      view.setTransform(dpr, 0, 0, dpr, 0, 0);
+      view.clearRect(0, 0, W, H);
+      view.drawImage(workC, 0, 0, W, H);
+      raf = requestAnimationFrame(frame);
+    }
+
+    window.addEventListener('pointermove', function (e) {
+      pulse(e.clientX, e.clientY, 0.5, false);
+    }, { passive: true });
+    window.addEventListener('pointerdown', function (e) {
+      pulse(e.clientX, e.clientY, 1, true);
+    }, { passive: true });
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        running = false;
+        if (raf) cancelAnimationFrame(raf);
+      } else if (toggleOn) {
+        running = true;
+        raf = requestAnimationFrame(frame);
+      }
+    });
+
+    var btn = document.createElement('button');
+    btn.id = 'ripple-toggle';
+    btn.textContent = 'ripple: grid';
+    btn.addEventListener('click', function () {
+      toggleOn = !toggleOn;
+      btn.textContent = toggleOn ? 'ripple: grid' : 'ripple: off';
+      canvas.style.display = toggleOn ? '' : 'none';
+      if (toggleOn) { running = true; raf = requestAnimationFrame(frame); }
+      else { running = false; if (raf) cancelAnimationFrame(raf); }
+    });
+    document.body.appendChild(btn);
+
+    raf = requestAnimationFrame(frame);
+  }
 
   var off = document.createElement('canvas');
   var octx = off.getContext('2d');
