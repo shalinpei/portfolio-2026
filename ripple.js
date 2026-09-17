@@ -10,9 +10,12 @@
  *
  * Delete this file + the loader snippet in index.html to revert completely.
  *
- * Variant: ?net=1 simulates a real elastic net — touch pushes the mesh
- * down, release lets tension snap it back with a bounce. The pastel
+ * Variant: ?net=1 starts in the elastic-net variant instead — touch pushes
+ * the mesh down, release lets tension snap it back with a bounce. The pastel
  * gradient is painted on the stretching mesh.
+ *
+ * Double-tap anywhere toggles between the water and net variants. It's a
+ * hidden Easter egg: no visible UI, no toggle button.
  *
  * All aesthetic knobs are in CONFIG below.
  */
@@ -55,7 +58,7 @@
   var NET_STRETCH = 30;   // px the mesh slides per unit of depth gradient
   var BRUSH_KICK = 1.6;   // velocity kick from a hover brush
 
-  var nu = null, nv = null; // depth + velocity fields (COLS x ROWS in NET mode)
+  var nu = null, nv = null; // depth + velocity fields (COLS x ROWS in net mode)
   var netSX = NET_SPACING, netSY = NET_SPACING; // actual vertex spacing, px
   var netPts = [];        // recent touch points {x, y, t} in px — colors the gradient
   var pressing = false, pressX = 0, pressY = 0;
@@ -122,8 +125,9 @@
     }
   }
 
-  // Variant flag: ?net=1 simulates a real elastic net.
-  var NET = new URLSearchParams(location.search).has('net');
+  // Variant mode: 'water' (default) or 'net'. ?net=1 starts in net mode.
+  // Double-tap toggles between them at runtime (Easter egg, no UI).
+  var mode = new URLSearchParams(location.search).has('net') ? 'net' : 'water';
 
   var gridMask = null, maskCtx = null, maskDpr = 1;
   var dpx = null, dpy = null; // displaced vertex positions, px
@@ -199,11 +203,12 @@
   style.textContent =
     '#ripple{position:fixed;inset:0;width:100%;height:100%;z-index:0;' +
     'pointer-events:none;image-rendering:pixelated;image-rendering:crisp-edges;}' +
+    'html{touch-action:manipulation;}' + // no double-tap zoom; it toggles variants
     'body.ripple-on main{position:relative;z-index:1;}';
   document.head.appendChild(style);
 
   var view = canvas.getContext('2d');
-  view.imageSmoothingEnabled = !NET; // the net variant upscales softly under crisp lines
+  view.imageSmoothingEnabled = (mode !== 'net'); // the net variant upscales softly under crisp lines
 
   var off = document.createElement('canvas');
   var octx = off.getContext('2d');
@@ -213,7 +218,7 @@
   function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    if (NET) {
+    if (mode === 'net') {
       // The membrane vertices ARE the wash pixels: one net cell each.
       COLS = Math.max(8, Math.round(window.innerWidth / NET_SPACING) + 1);
       ROWS = Math.max(8, Math.round(window.innerHeight / NET_SPACING) + 1);
@@ -261,36 +266,63 @@
     if (netPts.length > 12) netPts.shift();
     lastActive = performance.now();
   }
-  if (NET) {
-    window.addEventListener('pointermove', function (e) {
-      var dx = e.clientX - lastX, dy = e.clientY - lastY;
+  // Double-tap toggles between the water and net variants — a hidden
+  // Easter egg, no visible UI. The second tap of the pair is swallowed so
+  // it doesn't also splash (water) or press (net).
+  var lastDownT = 0, lastDownX = 0, lastDownY = 0, swallowUp = false;
+
+  function setMode(m) {
+    if (m === mode) return;
+    mode = m;
+    pressing = false;
+    autoPress.until = 0;
+    drops = [];
+    netPts = [];
+    lastX = -1e9; lastY = -1e9;
+    lastDownT = 0;
+    lastActive = performance.now();
+    view.imageSmoothingEnabled = (mode !== 'net');
+    resize(); // rebuilds the sim grids for the new mode, starting flat
+  }
+
+  window.addEventListener('pointermove', function (e) {
+    var dx = e.clientX - lastX, dy = e.clientY - lastY;
+    if (mode === 'net') {
       if (pressing) { pressX = e.clientX; pressY = e.clientY; }
       if (dx * dx + dy * dy > 30 * 30) {
         if (!pressing) brush(e.clientX, e.clientY);
         notePt(e.clientX, e.clientY);
         lastX = e.clientX; lastY = e.clientY;
       }
-    }, { passive: true });
-    window.addEventListener('pointerdown', function (e) {
+    } else if (dx * dx + dy * dy > 30 * 30) {
+      drop(e.clientX, e.clientY, CONFIG.hoverRadius, CONFIG.hoverStrength);
+      lastX = e.clientX; lastY = e.clientY;
+    }
+  }, { passive: true });
+  window.addEventListener('pointerdown', function (e) {
+    var now = performance.now();
+    var tdx = e.clientX - lastDownX, tdy = e.clientY - lastDownY;
+    if (now - lastDownT < 320 && tdx * tdx + tdy * tdy < 48 * 48) {
+      lastDownT = 0;
+      swallowUp = true;
+      setMode(mode === 'net' ? 'water' : 'net');
+      return;
+    }
+    lastDownT = now; lastDownX = e.clientX; lastDownY = e.clientY;
+    if (mode === 'net') {
       pressing = true; pressX = e.clientX; pressY = e.clientY;
       notePt(e.clientX, e.clientY);
-    }, { passive: true });
-    var release = function () { pressing = false; };
-    window.addEventListener('pointerup', release);
-    window.addEventListener('pointercancel', release);
-    window.addEventListener('blur', release);
-  } else {
-    window.addEventListener('pointermove', function (e) {
-      var dx = e.clientX - lastX, dy = e.clientY - lastY;
-      if (dx * dx + dy * dy > 30 * 30) {
-        drop(e.clientX, e.clientY, CONFIG.hoverRadius, CONFIG.hoverStrength);
-        lastX = e.clientX; lastY = e.clientY;
-      }
-    }, { passive: true });
-    window.addEventListener('pointerdown', function (e) {
+    } else {
       drop(e.clientX, e.clientY, CONFIG.tapRadius, CONFIG.tapStrength);
-    }, { passive: true });
+    }
+  }, { passive: true });
+  function endPress() {
+    if (swallowUp) { swallowUp = false; return; }
+    pressing = false;
   }
+  window.addEventListener('pointerup', endPress);
+  window.addEventListener('pointercancel', endPress);
+  window.addEventListener('blur', endPress);
 
   // ---------- simulation ----------
   function step() {
@@ -417,7 +449,7 @@
   var raf = null, running = true;
   function frame(now) {
     if (!running) return;
-    if (NET) {
+    if (mode === 'net') {
       stepNet(now);
       renderNet();
       // Idle poke: a gentle press that dents and releases on its own.
