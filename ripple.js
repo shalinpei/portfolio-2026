@@ -45,9 +45,9 @@
   // Palettes
   var TINT = [243, 207, 223];      // light crimson (~20% accent over white)
   var TINT_DEEP = [238, 185, 208]; // deeper crimson tint for strong disturbance
-  var PASTEL_PINK = [242, 164, 200];
-  var PASTEL_PURPLE = [196, 164, 224];
-  var PASTEL_BLUE = [164, 200, 240];
+  var PASTEL_PINK = [248, 201, 222];
+  var PASTEL_PURPLE = [220, 200, 238];
+  var PASTEL_BLUE = [200, 222, 246];
 
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
