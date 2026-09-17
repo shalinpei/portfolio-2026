@@ -44,12 +44,12 @@
   // slide in 2D along the depth gradient, so the mesh visibly stretches
   // like fabric instead of just changing brightness.
   var NET_SPACING = 24;   // net cell size, px
-  var NET_TENSION = 0.28; // wave-speed squared (must stay <= 0.5 for stability)
-  var NET_DAMP = 0.97;    // velocity retained per frame (higher = bouncier)
+  var NET_TENSION = 0.33; // wave-speed squared (must stay <= 0.5 for stability)
+  var NET_DAMP = 0.975;   // velocity retained per frame (higher = bouncier)
   var NET_SETTLE = 0.09;  // extra damping near stillness — kills tertiary
                           // tremble while leaving the main motion lively
   var PRESS_R = 110;      // finger radius, px
-  var PRESS_DEPTH = 30;   // full-press dent depth, in depth units
+  var PRESS_DEPTH = 40;   // full-press dent depth, in depth units
   var PRESS_K = 0.4;      // how fast the mesh follows the finger (position
                           // lerp — a contraction, so a held press can't oscillate)
   var NET_STRETCH = 30;   // px the mesh slides per unit of depth gradient
