@@ -77,7 +77,7 @@
 // Delete this block + ripple.js to revert completely.
 if (new URLSearchParams(location.search).has('ripple')) {
   var rs = document.createElement('script');
-  rs.src = 'ripple.js';
+  rs.src = 'ripple.js?v=20260917c'; // bump on every tweak so browsers never serve a stale copy
   document.body.appendChild(rs);
 }
 </script>
