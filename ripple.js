@@ -28,7 +28,8 @@
     px: 11,            // pixel chunk size — bigger = chunkier
     damping: 0.986,    // wave decay per frame (lower = calmer, faster fade)
     hoverRadius: 2,    // hover wake radius, in cells
-    hoverStrength: 45, // hover wake strength
+    hoverStrength: 30, // hover wake strength (softened 2026-09-20: gentler wake)
+    hoverSpacing: 90,  // px of pointer travel between hover drops (2026-09-20: wider spacing = calmer)
     tapRadius: 5,      // tap splash radius, in cells
     tapStrength: 260,  // tap splash strength
     idleEvery: 3400,   // ms between idle droplets (0 = off)
@@ -313,7 +314,7 @@
         notePt(e.clientX, e.clientY);
         lastX = e.clientX; lastY = e.clientY;
       }
-    } else if (dx * dx + dy * dy > 30 * 30) {
+    } else if (dx * dx + dy * dy > CONFIG.hoverSpacing * CONFIG.hoverSpacing) {
       drop(e.clientX, e.clientY, CONFIG.hoverRadius, CONFIG.hoverStrength);
       lastX = e.clientX; lastY = e.clientY;
     }
