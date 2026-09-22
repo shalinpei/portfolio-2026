@@ -45,6 +45,12 @@
   var PASTEL_PURPLE = [220, 200, 238];
   var PASTEL_BLUE = [200, 222, 246];
 
+  // Net-variant stops — deeper than the water pastels so the thin mesh
+  // lines carry visible color (2026-09-22, water palette unchanged).
+  var NET_PINK = [232, 148, 188];
+  var NET_PURPLE = [182, 152, 216];
+  var NET_BLUE = [148, 182, 232];
+
   // ---------- real-net membrane model (?net=1) ----------
   // The net is an elastic membrane pinned at its frame. A touch pushes it
   // down; on release, tension snaps it back with a bounce. Vertices also
@@ -449,7 +455,7 @@
       var py = y * netSY;
       for (var x = 0; x < nCOLS; x++) {
         var i = y * nCOLS + x;
-        var energy = Math.abs(nu[i]) * 0.04 + Math.abs(nv[i]) * 0.10;
+        var energy = (Math.abs(nu[i]) * 0.04 + Math.abs(nv[i]) * 0.10) * 1.5;
         var r = 255, g = 255, b = 255, a = 0;
         if (energy > 0.02) {
           var px = x * netSX;
@@ -462,8 +468,8 @@
           var t = dMin / 220;
           if (t > 1) t = 1;
           var ramp = t < 0.5
-            ? lerpC(PASTEL_PINK, PASTEL_PURPLE, t * 2)
-            : lerpC(PASTEL_PURPLE, PASTEL_BLUE, (t - 0.5) * 2);
+            ? lerpC(NET_PINK, NET_PURPLE, t * 2)
+            : lerpC(NET_PURPLE, NET_BLUE, (t - 0.5) * 2);
           var k = energy > 1 ? 1 : energy;
           var fade = 1 - (dMin - 160) / 240;
           if (fade < 0) fade = 0; else if (fade > 1) fade = 1;
