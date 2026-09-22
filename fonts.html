@@ -1,260 +1,194 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Font combos — preview (not linked from the site)</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sans-serif explorations — shalinpei.com</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Archivo:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
-<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:ital,wght@0,100..900;1,100..900&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,12..100,200..800&family=Chivo:ital,wght@0,100..900;1,100..900&family=Golos+Text:wght@400..900&family=Libre+Franklin:ital,wght@0,100..900;1,100..900&family=Onest:wght@100..900&family=Schibsted+Grotesk:wght@400..900&family=Sora:wght@100..800&display=swap" rel="stylesheet">
-<link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@100,200,300,400,500,600,700,800,900&f[]=switzer@100,200,300,400,500,600,700,800,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Jost:ital,wght@0,100..900;1,100..900&family=Karla:ital,wght@0,200..800;1,200..800&family=League+Spartan:wght@100..900&family=Quicksand:wght@300..700&family=Red+Hat+Display:ital,wght@0,300..900;1,300..900&family=Syne:wght@400..800&family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@300,400,500,600,700&f[]=switzer@300,400,500,600,700&f[]=clash-display@300,400,500,600,700&f[]=chillax@300,400,500,600,700&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: light; }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: #fff; color: #1a1a1a; font-family: "Inter", system-ui, sans-serif; }
-  .combo { padding: 3rem 2rem; border-bottom: 1px solid #eee; }
-  .combo-inner { max-width: 34rem; margin: 0 auto; }
-  .label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: #999; margin-bottom: 0.4rem; }
-  .stack { font-size: 0.78rem; color: #bbb; margin-bottom: 2rem; font-family: ui-monospace, monospace; }
-  .name { font-size: 2em; line-height: 1.15; margin: 0 0 0.3em; }
-  .bio { font-size: 1.125rem; line-height: 1.6; margin: 0 0 1.5rem; font-weight: 400; }
-  .bio a { color: #c2115e; }
-  footer.links { margin-top: 2.5rem; font-size: 0.9rem; display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; }
-  footer.links a { color: #c2115e; text-decoration: none; }
-  footer.links a:hover { text-decoration: underline; }
+  :root { --ink: #1a1a1a; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #fafafa; }
+  .combo { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 64px 24px; border-bottom: 1px solid #e8e8e8; }
+  .combo-inner { max-width: 640px; width: 100%; }
+  .label { font-family: ui-monospace, monospace; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 8px; }
+  .stack { font-family: ui-monospace, monospace; font-size: 12px; color: #999; margin-bottom: 48px; }
+  .initials { font-size: 84px; line-height: 1; color: var(--ink); margin-bottom: 36px; }
+  .name { font-size: clamp(48px, 8vw, 76px); line-height: 1.02; color: var(--ink); margin-bottom: 24px; }
+  .bio { font-size: 19px; line-height: 1.6; color: var(--ink); margin-bottom: 32px; font-weight: 300; }
+  .bio a { color: var(--ink); }
+  footer.links { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 15px; font-weight: 300; }
+  footer.links a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
-  .c1 .name { font-family: "Inter", sans-serif; font-weight: 700; letter-spacing: -0.04em; }
-  .c1 .bio, .c1 footer.links { font-family: "Inter", sans-serif; font-weight: 400; }
+  .c1 .name, .c1 .initials { font-family: "Inter", sans-serif; font-weight: 700; letter-spacing: -0.03em; }
+  .c1 .bio, .c1 footer.links { font-family: "Inter", sans-serif; }
 
-  .c2 .name { font-family: "Instrument Serif", serif; font-weight: 400; letter-spacing: 0; }
-  .c2 .bio, .c2 footer.links { font-family: "Inter", sans-serif; font-weight: 400; }
+  .c2 .name, .c2 .initials { font-family: "Instrument Sans", sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+  .c2 .bio, .c2 footer.links { font-family: "Instrument Sans", sans-serif; font-weight: 400; }
 
-  .c3 .name { font-family: "Inter", sans-serif; font-weight: 600; letter-spacing: -0.03em; }
-  .c3 .bio, .c3 footer.links { font-family: "Inter", sans-serif; font-weight: 400; }
-  .c3 .bio em.serif { font-family: "Instrument Serif", serif; font-style: italic; font-size: 1.12em; }
+  .c3 .name, .c3 .initials { font-family: "Cabinet Grotesk", sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+  .c3 .bio, .c3 footer.links { font-family: "Cabinet Grotesk", sans-serif; }
 
-  .c4 .name { font-family: "Instrument Serif", serif; font-weight: 400; }
-  .c4 .bio, .c4 footer.links { font-family: "Instrument Serif", serif; font-weight: 400; font-size: 1.2rem; }
+  .c4 .name, .c4 .initials { font-family: "Switzer", sans-serif; font-weight: 600; letter-spacing: -0.02em; }
+  .c4 .bio, .c4 footer.links { font-family: "Switzer", sans-serif; }
 
-  .c5 .name { font-family: "Instrument Sans", sans-serif; font-weight: 700; letter-spacing: -0.03em; }
-  .c5 .bio, .c5 footer.links { font-family: "Instrument Sans", sans-serif; font-weight: 400; }
+  .c5 .name, .c5 .initials { font-family: "Jost", sans-serif; font-weight: 600; letter-spacing: -0.02em; }
+  .c5 .bio, .c5 footer.links { font-family: "Jost", sans-serif; }
 
-  .c6 .name { font-family: "Instrument Serif", serif; font-weight: 400; letter-spacing: 0; }
-  .c6 .bio, .c6 footer.links { font-family: "Instrument Sans", sans-serif; font-weight: 400; }
+  .c6 .name, .c6 .initials { font-family: "Karla", sans-serif; font-weight: 700; letter-spacing: -0.01em; }
+  .c6 .bio, .c6 footer.links { font-family: "Karla", sans-serif; }
 
-  .c7 .name { font-family: "Geist", sans-serif; font-weight: 700; letter-spacing: -0.03em; }
-  .c7 .bio, .c7 footer.links { font-family: "Geist", sans-serif; font-weight: 400; }
+  .c7 .name, .c7 .initials { font-family: "League Spartan", sans-serif; font-weight: 700; letter-spacing: -0.01em; }
+  .c7 .bio, .c7 footer.links { font-family: "League Spartan", sans-serif; }
 
-  .c8 .name { font-family: "Manrope", sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-  .c8 .bio, .c8 footer.links { font-family: "Manrope", sans-serif; font-weight: 400; }
+  .c8 .name, .c8 .initials { font-family: "Unbounded", sans-serif; font-weight: 600; letter-spacing: 0; }
+  .c8 .bio, .c8 footer.links { font-family: "Unbounded", sans-serif; }
 
-  .c9 .name { font-family: "Archivo", sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-  .c9 .bio, .c9 footer.links { font-family: "Archivo", sans-serif; font-weight: 400; }
+  .c9 .name, .c9 .initials { font-family: "Syne", sans-serif; font-weight: 700; letter-spacing: -0.01em; }
+  .c9 .bio, .c9 footer.links { font-family: "Syne", sans-serif; font-weight: 400; }
 
-  .c10 .name { font-family: "DM Sans", sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-  .c10 .bio, .c10 footer.links { font-family: "DM Sans", sans-serif; font-weight: 400; }
+  .c10 .name, .c10 .initials { font-family: "Clash Display", sans-serif; font-weight: 600; letter-spacing: -0.01em; }
+  .c10 .bio, .c10 footer.links { font-family: "Clash Display", sans-serif; }
 
-  .c11 .name { font-family: "General Sans", sans-serif; font-weight: 600; letter-spacing: -0.02em; }
-  .c11 .bio, .c11 footer.links { font-family: "General Sans", sans-serif; font-weight: 400; }
+  .c11 .name, .c11 .initials { font-family: "Chillax", sans-serif; font-weight: 600; letter-spacing: -0.01em; }
+  .c11 .bio, .c11 footer.links { font-family: "Chillax", sans-serif; }
 
-  .c12 .name { font-family: "Cabinet Grotesk", sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-  .c12 .bio, .c12 footer.links { font-family: "Cabinet Grotesk", sans-serif; font-weight: 400; }
+  .c12 .name, .c12 .initials { font-family: "Red Hat Display", sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+  .c12 .bio, .c12 footer.links { font-family: "Red Hat Display", sans-serif; }
 
-  .c13 .name { font-family: "Switzer", sans-serif; font-weight: 600; letter-spacing: -0.02em; }
-  .c13 .bio, .c13 footer.links { font-family: "Switzer", sans-serif; font-weight: 400; }
+  .c13 .name, .c13 .initials { font-family: "Quicksand", sans-serif; font-weight: 700; letter-spacing: -0.01em; }
+  .c13 .bio, .c13 footer.links { font-family: "Quicksand", sans-serif; }
 
-  .c14 .name { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; letter-spacing: -0.01em; }
-  .c14 .bio, .c14 footer.links { font-family: "Bricolage Grotesque", sans-serif; font-weight: 400; }
-
-  .c15 .name { font-family: "Sora", sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-  .c15 .bio, .c15 footer.links { font-family: "Sora", sans-serif; font-weight: 400; }
-
-  .c16 .name { font-family: "Albert Sans", sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-  .c16 .bio, .c16 footer.links { font-family: "Albert Sans", sans-serif; font-weight: 400; }
-
-  .c17 .name { font-family: "Chivo", sans-serif; font-weight: 700; letter-spacing: -0.01em; }
-  .c17 .bio, .c17 footer.links { font-family: "Chivo", sans-serif; font-weight: 400; }
-
-  .c18 .name { font-family: "Libre Franklin", sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-  .c18 .bio, .c18 footer.links { font-family: "Libre Franklin", sans-serif; font-weight: 400; }
-
-  .c19 .name { font-family: "Schibsted Grotesk", sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-  .c19 .bio, .c19 footer.links { font-family: "Schibsted Grotesk", sans-serif; font-weight: 400; }
-
-  .c20 .name { font-family: "Onest", sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-  .c20 .bio, .c20 footer.links { font-family: "Onest", sans-serif; font-weight: 400; }
-
-  .c21 .name { font-family: "Golos Text", sans-serif; font-weight: 700; letter-spacing: -0.01em; }
-  .c21 .bio, .c21 footer.links { font-family: "Golos Text", sans-serif; font-weight: 400; }
+  .c14 .name, .c14 .initials { font-family: "Josefin Sans", sans-serif; font-weight: 600; letter-spacing: -0.01em; }
+  .c14 .bio, .c14 footer.links { font-family: "Josefin Sans", sans-serif; }
 </style>
 </head>
 <body>
 
 <section class="combo c1"><div class="combo-inner">
-  <div class="label">1 — Inter, pure</div>
-  <div class="stack">name: Inter 700, -0.04em &nbsp;/&nbsp; body: Inter 400</div>
+  <div class="label">1 — Inter, pure (keep)</div>
+  <div class="stack">name: Inter 700 &nbsp;/&nbsp; body: Inter 300 &nbsp;/&nbsp; SP monogram test</div>
+  <div class="initials">SP</div>
   <h1 class="name">Shalin Pei</h1>
   <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
 </div></section>
 
 <section class="combo c2"><div class="combo-inner">
-  <div class="label">2 — Instrument Serif name + Inter body</div>
-  <div class="stack">name: Instrument Serif 400 &nbsp;/&nbsp; body: Inter 400</div>
+  <div class="label">2 — Instrument Sans, pure (keep)</div>
+  <div class="stack">name: Instrument Sans 700 &nbsp;/&nbsp; body: Instrument Sans 400 (lightest available) &nbsp;/&nbsp; SP monogram test</div>
+  <div class="initials">SP</div>
   <h1 class="name">Shalin Pei</h1>
   <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
 </div></section>
 
 <section class="combo c3"><div class="combo-inner">
-  <div class="label">3 — Inter name + Instrument Serif italic accents</div>
-  <div class="stack">name: Inter 600, -0.03em &nbsp;/&nbsp; body: Inter 400 with serif-italic phrases</div>
+  <div class="label">3 — Cabinet Grotesk, pure (keep)</div>
+  <div class="stack">name: Cabinet Grotesk 700 &nbsp;/&nbsp; body: Cabinet Grotesk 300 &nbsp;/&nbsp; SP monogram test</div>
+  <div class="initials">SP</div>
   <h1 class="name">Shalin Pei</h1>
-  <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7"><em class="serif">on sabbatical</em></a>, writing, advising, and exploring <em class="serif">side quests</em>.</p>
+  <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
 </div></section>
 
 <section class="combo c4"><div class="combo-inner">
-  <div class="label">4 — Instrument Serif throughout (for contrast)</div>
-  <div class="stack">name + body: Instrument Serif 400</div>
+  <div class="label">4 — Switzer, pure (keep)</div>
+  <div class="stack">name: Switzer 600 &nbsp;/&nbsp; body: Switzer 300 &nbsp;/&nbsp; SP monogram test</div>
+  <div class="initials">SP</div>
   <h1 class="name">Shalin Pei</h1>
   <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
 </div></section>
 
 <section class="combo c5"><div class="combo-inner">
-  <div class="label">5 — Instrument Sans, pure</div>
-  <div class="stack">name: Instrument Sans 700, -0.03em &nbsp;/&nbsp; body: Instrument Sans 400</div>
+  <div class="label">5 — Jost</div>
+  <div class="stack">name: Jost 600 &nbsp;/&nbsp; body: Jost 300 &nbsp;/&nbsp; SP monogram test</div>
+  <div class="initials">SP</div>
   <h1 class="name">Shalin Pei</h1>
   <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
 </div></section>
 
 <section class="combo c6"><div class="combo-inner">
-  <div class="label">6 — Instrument Serif name + Instrument Sans body (the designed pairing)</div>
-  <div class="stack">name: Instrument Serif 400 &nbsp;/&nbsp; body: Instrument Sans 400</div>
+  <div class="label">6 — Karla</div>
+  <div class="stack">name: Karla 700 &nbsp;/&nbsp; body: Karla 300 &nbsp;/&nbsp; SP monogram test</div>
+  <div class="initials">SP</div>
   <h1 class="name">Shalin Pei</h1>
   <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
 </div></section>
 
 <section class="combo c7"><div class="combo-inner">
-  <div class="label">7 — Geist, pure</div>
-  <div class="stack">name: Geist 700, -0.03em &nbsp;/&nbsp; body: Geist 400</div>
+  <div class="label">7 — League Spartan</div>
+  <div class="stack">name: League Spartan 700 &nbsp;/&nbsp; body: League Spartan 300 &nbsp;/&nbsp; SP monogram test</div>
+  <div class="initials">SP</div>
   <h1 class="name">Shalin Pei</h1>
   <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
 </div></section>
 
 <section class="combo c8"><div class="combo-inner">
-  <div class="label">8 — Manrope, pure</div>
-  <div class="stack">name: Manrope 700, -0.02em &nbsp;/&nbsp; body: Manrope 400</div>
+  <div class="label">8 — Unbounded</div>
+  <div class="stack">name: Unbounded 600 &nbsp;/&nbsp; body: Unbounded 300 &nbsp;/&nbsp; SP monogram test</div>
+  <div class="initials">SP</div>
   <h1 class="name">Shalin Pei</h1>
   <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
 </div></section>
 
 <section class="combo c9"><div class="combo-inner">
-  <div class="label">9 — Archivo, pure</div>
-  <div class="stack">name: Archivo 700, -0.02em &nbsp;/&nbsp; body: Archivo 400</div>
+  <div class="label">9 — Syne</div>
+  <div class="stack">name: Syne 700 &nbsp;/&nbsp; body: Syne 400 (lightest available) &nbsp;/&nbsp; SP monogram test</div>
+  <div class="initials">SP</div>
   <h1 class="name">Shalin Pei</h1>
   <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
 </div></section>
 
 <section class="combo c10"><div class="combo-inner">
-  <div class="label">10 — DM Sans, pure</div>
-  <div class="stack">name: DM Sans 700, -0.02em &nbsp;/&nbsp; body: DM Sans 400</div>
+  <div class="label">10 — Clash Display</div>
+  <div class="stack">name: Clash Display 600 &nbsp;/&nbsp; body: Clash Display 300 &nbsp;/&nbsp; SP monogram test</div>
+  <div class="initials">SP</div>
   <h1 class="name">Shalin Pei</h1>
   <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
 </div></section>
 
 <section class="combo c11"><div class="combo-inner">
-  <div class="label">11 — General Sans, pure</div>
-  <div class="stack">name: General Sans 600, -0.02em &nbsp;/&nbsp; body: General Sans 400</div>
+  <div class="label">11 — Chillax</div>
+  <div class="stack">name: Chillax 600 &nbsp;/&nbsp; body: Chillax 300 &nbsp;/&nbsp; SP monogram test</div>
+  <div class="initials">SP</div>
   <h1 class="name">Shalin Pei</h1>
   <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
 </div></section>
 
 <section class="combo c12"><div class="combo-inner">
-  <div class="label">12 — Cabinet Grotesk, pure</div>
-  <div class="stack">name: Cabinet Grotesk 700, -0.02em &nbsp;/&nbsp; body: Cabinet Grotesk 400</div>
+  <div class="label">12 — Red Hat Display</div>
+  <div class="stack">name: Red Hat Display 700 &nbsp;/&nbsp; body: Red Hat Display 300 &nbsp;/&nbsp; SP monogram test</div>
+  <div class="initials">SP</div>
   <h1 class="name">Shalin Pei</h1>
   <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
 </div></section>
 
 <section class="combo c13"><div class="combo-inner">
-  <div class="label">13 — Switzer, pure</div>
-  <div class="stack">name: Switzer 600, -0.02em &nbsp;/&nbsp; body: Switzer 400</div>
+  <div class="label">13 — Quicksand</div>
+  <div class="stack">name: Quicksand 700 &nbsp;/&nbsp; body: Quicksand 300 &nbsp;/&nbsp; SP monogram test</div>
+  <div class="initials">SP</div>
   <h1 class="name">Shalin Pei</h1>
   <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
 </div></section>
 
 <section class="combo c14"><div class="combo-inner">
-  <div class="label">14 — Bricolage Grotesque, pure</div>
-  <div class="stack">name: Bricolage Grotesque 700, -0.01em &nbsp;/&nbsp; body: Bricolage Grotesque 400</div>
-  <h1 class="name">Shalin Pei</h1>
-  <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
-  <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
-</div></section>
-
-<section class="combo c15"><div class="combo-inner">
-  <div class="label">15 — Sora, pure</div>
-  <div class="stack">name: Sora 700, -0.02em &nbsp;/&nbsp; body: Sora 400</div>
-  <h1 class="name">Shalin Pei</h1>
-  <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
-  <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
-</div></section>
-
-<section class="combo c16"><div class="combo-inner">
-  <div class="label">16 — Albert Sans, pure</div>
-  <div class="stack">name: Albert Sans 700, -0.02em &nbsp;/&nbsp; body: Albert Sans 400</div>
-  <h1 class="name">Shalin Pei</h1>
-  <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
-  <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
-</div></section>
-
-<section class="combo c17"><div class="combo-inner">
-  <div class="label">17 — Chivo, pure</div>
-  <div class="stack">name: Chivo 700, -0.01em &nbsp;/&nbsp; body: Chivo 400</div>
-  <h1 class="name">Shalin Pei</h1>
-  <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
-  <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
-</div></section>
-
-<section class="combo c18"><div class="combo-inner">
-  <div class="label">18 — Libre Franklin, pure</div>
-  <div class="stack">name: Libre Franklin 700, -0.02em &nbsp;/&nbsp; body: Libre Franklin 400</div>
-  <h1 class="name">Shalin Pei</h1>
-  <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
-  <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
-</div></section>
-
-<section class="combo c19"><div class="combo-inner">
-  <div class="label">19 — Schibsted Grotesk, pure</div>
-  <div class="stack">name: Schibsted Grotesk 700, -0.02em &nbsp;/&nbsp; body: Schibsted Grotesk 400</div>
-  <h1 class="name">Shalin Pei</h1>
-  <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
-  <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
-</div></section>
-
-<section class="combo c20"><div class="combo-inner">
-  <div class="label">20 — Onest, pure</div>
-  <div class="stack">name: Onest 700, -0.02em &nbsp;/&nbsp; body: Onest 400</div>
-  <h1 class="name">Shalin Pei</h1>
-  <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
-  <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
-</div></section>
-
-<section class="combo c21"><div class="combo-inner">
-  <div class="label">21 — Golos Text, pure</div>
-  <div class="stack">name: Golos Text 700, -0.01em &nbsp;/&nbsp; body: Golos Text 400</div>
+  <div class="label">14 — Josefin Sans</div>
+  <div class="stack">name: Josefin Sans 600 &nbsp;/&nbsp; body: Josefin Sans 300 &nbsp;/&nbsp; SP monogram test</div>
+  <div class="initials">SP</div>
   <h1 class="name">Shalin Pei</h1>
   <p class="bio">I'm a Brooklyn-based design executive who previously led design at Coinbase, Facebook, and Google. I'm currently <a href="https://lnkd.in/p/gjH6TfU7">on sabbatical</a>, writing, advising, and exploring side quests.</p>
   <footer class="links"><a href="#">Email</a><a href="#">LinkedIn</a><a href="#">Threads</a><a href="#">X</a><a href="#">Medium</a><a href="#">Instagram</a></footer>
