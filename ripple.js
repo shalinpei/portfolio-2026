@@ -3,10 +3,10 @@
  * The site's signature background: soft pink -> purple -> blue ripples that
  * bloom from the cursor or a tap and fade back to white. A classic
  * two-buffer heightfield simulation runs on a low-res grid; the grid is
- * drawn to a tiny offscreen canvas and scaled up with smoothing off, which
- * gives the chunky pixel look. Pointer moves leave a wake, taps make a
- * splash, and idle droplets fall on their own. The canvas sits BEHIND the
- * content, so text stays perfectly crisp.
+ * drawn to a tiny offscreen canvas and scaled up, which gives the chunky
+ * pixel look. A cursor movement earns a single drop at its start, taps
+ * make a splash, and idle droplets fall on their own. The canvas sits
+ * BEHIND the content, so text stays perfectly crisp.
  *
  * Delete this file + the loader snippet in index.html to revert completely.
  *
@@ -26,12 +26,16 @@
 
   var CONFIG = {
     px: 11,            // pixel chunk size — bigger = chunkier
-    damping: 0.986,    // wave decay per frame (lower = calmer, faster fade)
-    hoverRadius: 2,    // hover wake radius, in cells
-    hoverStrength: 30, // hover wake strength (softened 2026-09-20: gentler wake)
+    damping: 0.978,    // wave decay per frame (lower = calmer, faster fade;
+                       // tightened 2026-09-22: snappier, less languid tail)
+    hoverRadius: 3,    // hover drop radius, in cells (2026-09-22: bigger —
+                       // the single drop has to read on its own)
+    hoverStrength: 55, // hover drop strength (2026-09-22: stronger — one drop
+                       // per movement now, give it presence)
     hoverRearm: 500,   // ms of stillness before a new cursor movement counts as
                        // a fresh start and earns a single drop (2026-09-22)
-    tapRadius: 5,      // tap splash radius, in cells
+    tapRadius: 6,      // tap splash radius, in cells (2026-09-22: slightly
+                       // wider opening bloom)
     tapStrength: 260,  // tap splash strength
     idleEvery: 3400,   // ms between idle droplets (0 = off)
     idleStrength: 90,  // idle droplet strength
