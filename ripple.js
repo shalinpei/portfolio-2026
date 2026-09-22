@@ -29,7 +29,8 @@
     damping: 0.986,    // wave decay per frame (lower = calmer, faster fade)
     hoverRadius: 2,    // hover wake radius, in cells
     hoverStrength: 30, // hover wake strength (softened 2026-09-20: gentler wake)
-    hoverSpacing: 90,  // px of pointer travel between hover drops (2026-09-20: wider spacing = calmer)
+    hoverRearm: 500,   // ms of stillness before a new cursor movement counts as
+                       // a fresh start and earns a single drop (2026-09-22)
     tapRadius: 5,      // tap splash radius, in cells
     tapStrength: 260,  // tap splash strength
     idleEvery: 3400,   // ms between idle droplets (0 = off)
@@ -278,7 +279,7 @@
     lastActive = performance.now();
   }
 
-  var lastX = -1e9, lastY = -1e9, lastActive = 0, lastIdle = 0;
+  var lastX = -1e9, lastY = -1e9, lastActive = 0, lastIdle = 0, lastMoveT = 0;
   function notePt(x, y) { // net variant: remember a touch point for the gradient
     netPts.push({ x: x, y: y, t: performance.now() });
     if (netPts.length > 12) netPts.shift();
@@ -306,6 +307,7 @@
   }
 
   window.addEventListener('pointermove', function (e) {
+    var now = performance.now();
     var dx = e.clientX - lastX, dy = e.clientY - lastY;
     if (mode === 'net') {
       if (pressing) { pressX = e.clientX; pressY = e.clientY; }
@@ -314,10 +316,13 @@
         notePt(e.clientX, e.clientY);
         lastX = e.clientX; lastY = e.clientY;
       }
-    } else if (dx * dx + dy * dy > CONFIG.hoverSpacing * CONFIG.hoverSpacing) {
+    } else if (now - lastMoveT > CONFIG.hoverRearm) {
+      // Single drop at the START of a cursor movement — no trailing wake
+      // while the pointer keeps moving.
       drop(e.clientX, e.clientY, CONFIG.hoverRadius, CONFIG.hoverStrength);
       lastX = e.clientX; lastY = e.clientY;
     }
+    lastMoveT = now;
   }, { passive: true });
   function pressOrDrop(e) {
     if (mode === 'net') {
