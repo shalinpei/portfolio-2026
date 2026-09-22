@@ -28,6 +28,8 @@
     px: 11,            // pixel chunk size — bigger = chunkier
     damping: 0.978,    // wave decay per frame (lower = calmer, faster fade;
                        // tightened 2026-09-22: snappier, less languid tail)
+    substeps: 2,       // sim steps per frame — doubles wavefront speed
+                       // without changing the chunky look (2026-09-22)
     hoverRadius: 3,    // hover drop radius, in cells (2026-09-22: bigger —
                        // the single drop has to read on its own)
     hoverStrength: 55, // hover drop strength (2026-09-22: stronger — one drop
@@ -371,6 +373,9 @@
 
   // ---------- simulation ----------
   function step() {
+    for (var s = 0; s < CONFIG.substeps; s++) stepOnce();
+  }
+  function stepOnce() {
     var damping = CONFIG.damping;
     for (var y = 1; y < wROWS - 1; y++) {
       var row = y * wCOLS;
