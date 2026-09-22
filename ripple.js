@@ -26,18 +26,12 @@
 
   var CONFIG = {
     px: 11,            // pixel chunk size — bigger = chunkier
-    damping: 0.978,    // wave decay per frame (lower = calmer, faster fade;
-                       // tightened 2026-09-22: snappier, less languid tail)
-    substeps: 2,       // sim steps per frame — doubles wavefront speed
-                       // without changing the chunky look (2026-09-22)
-    hoverRadius: 3,    // hover drop radius, in cells (2026-09-22: bigger —
-                       // the single drop has to read on its own)
-    hoverStrength: 55, // hover drop strength (2026-09-22: stronger — one drop
-                       // per movement now, give it presence)
+    damping: 0.986,    // wave decay per frame (lower = calmer, faster fade)
+    hoverRadius: 2,    // hover drop radius, in cells
+    hoverStrength: 30, // hover drop strength
     hoverRearm: 500,   // ms of stillness before a new cursor movement counts as
                        // a fresh start and earns a single drop (2026-09-22)
-    tapRadius: 6,      // tap splash radius, in cells (2026-09-22: slightly
-                       // wider opening bloom)
+    tapRadius: 5,      // tap splash radius, in cells
     tapStrength: 260,  // tap splash strength
     idleEvery: 3400,   // ms between idle droplets (0 = off)
     idleStrength: 90,  // idle droplet strength
@@ -373,9 +367,6 @@
 
   // ---------- simulation ----------
   function step() {
-    for (var s = 0; s < CONFIG.substeps; s++) stepOnce();
-  }
-  function stepOnce() {
     var damping = CONFIG.damping;
     for (var y = 1; y < wROWS - 1; y++) {
       var row = y * wCOLS;
