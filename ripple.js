@@ -496,9 +496,33 @@
   // ?fps=1 draws a small live frame-rate readout (diagnostic, off by default).
   var showFps = new URLSearchParams(location.search).has('fps');
   var fpsFrames = 0, fpsT0 = 0, fpsText = '';
+  // Fixed timestep: the simulation advances by wall-clock time (60 steps
+  // per real second), so the animation runs at the same speed on 30Hz,
+  // 60Hz, and 120Hz displays. Frame-counted physics runs at half speed
+  // on a 30Hz monitor — which is exactly what the ?fps=1 readout caught.
+  var STEP_MS = 1000 / 60;
+  var MAX_STEPS = 4; // per frame; beyond this we shed load instead of spiraling
+  var simAcc = { water: 0, net: 0 };
+  var simLast = { water: 0, net: 0 };
+  function advanceSim(m, now) {
+    var last = simLast[m] || now;
+    var dt = now - last;
+    simLast[m] = now;
+    if (dt <= 0) return;
+    if (dt > 250) dt = 250; // tab was hidden — don't try to catch up
+    simAcc[m] += dt;
+    var n = 0;
+    while (simAcc[m] >= STEP_MS && n < MAX_STEPS) {
+      if (m === 'net') stepNet(now); else step();
+      simAcc[m] -= STEP_MS;
+      n++;
+    }
+    if (n === MAX_STEPS) simAcc[m] = 0;
+  }
   function stepRender(m, target, now) {
-    if (m === 'net') { stepNet(now); renderNet(target); }
-    else { step(); renderWater(target); }
+    advanceSim(m, now);
+    if (m === 'net') renderNet(target);
+    else renderWater(target);
   }
   function frame(now) {
     if (!running) return;
