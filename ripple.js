@@ -493,6 +493,9 @@
 
   // ---------- main loop ----------
   var raf = null, running = true;
+  // ?fps=1 draws a small live frame-rate readout (diagnostic, off by default).
+  var showFps = new URLSearchParams(location.search).has('fps');
+  var fpsFrames = 0, fpsT0 = 0, fpsText = '';
   function stepRender(m, target, now) {
     if (m === 'net') { stepNet(now); renderNet(target); }
     else { step(); renderWater(target); }
@@ -532,6 +535,20 @@
         lastIdle = now;
         drop(Math.random() * canvas.width, Math.random() * canvas.height,
              CONFIG.idleRadius, CONFIG.idleStrength);
+      }
+    }
+    if (showFps) {
+      fpsFrames++;
+      if (now - fpsT0 >= 500) {
+        fpsText = (fpsFrames * 1000 / (now - fpsT0)).toFixed(0) + ' fps';
+        fpsFrames = 0; fpsT0 = now;
+      }
+      if (fpsText) {
+        view.save();
+        view.font = '12px ui-monospace, monospace';
+        view.fillStyle = 'rgba(26,26,26,0.6)';
+        view.fillText(fpsText, 12, 22);
+        view.restore();
       }
     }
     raf = requestAnimationFrame(frame);
